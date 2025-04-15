@@ -1,0 +1,14 @@
+{
+  "source": "/home/username/",
+  "destination": "/mnt/backup_drive/",
+  "interval_minutes": 30,
+  "excludes": [
+    "node_modules/",
+    ".git/",
+    "*.tmp",
+    ".cache/",
+    ".vscode/",
+    "venv/",
+    "__pycache__/"
+  ]
+}

@@ -1,0 +1,10 @@
+[Unit]
+Description=Background file sync daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/sync_daemon/sync_daemon.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
