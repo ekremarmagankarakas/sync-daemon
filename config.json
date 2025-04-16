@@ -4,6 +4,9 @@
       "source": "/home/username/sync_daemon_test/",
       "destination": "/home/username/sync_daemon_test/backup/",
       "interval_minutes": 1,
+      "keep_backups": 2,
+      "prune_old_backups": true,
+      "enabled": true,
       "excludes": [
         "node_modules/",
         ".git/",
@@ -13,6 +16,18 @@
         "venv/",
         "__pycache__/",
         "backup/"
+      ]
+    },
+    {
+      "source": "/home/username/another_folder/",
+      "destination": "/home/username/another_backup/",
+      "interval_minutes": 60,
+      "keep_backups": 5,
+      "prune_old_backups": false,
+      "enabled": false,
+      "excludes": [
+        "*.tmp",
+        ".git/"
       ]
     }
   ]

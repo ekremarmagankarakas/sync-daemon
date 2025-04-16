@@ -35,19 +35,58 @@ def load_config():
     with open(CONFIG_PATH, "r") as f:
         return json.load(f)
 
-def sync(src, dest, excludes=None):
+def sync(src, dest, excludes=None, keep_backups=2, prune_old_backups=True):
     try:
+        # Create timestamp for backup folder
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_dest = os.path.join(dest, timestamp)
+        
+        # Create backup directory
+        os.makedirs(backup_dest, exist_ok=True)
+        
+        # Run rsync to backup folder
         cmd = ["rsync", "-avh", "--delete"]
         
         if excludes:
             for pattern in excludes:
                 cmd.extend(["--exclude", pattern])
         
-        cmd.extend([src, dest])
+        cmd.extend([src, backup_dest])
         subprocess.run(cmd, check=True)
-        logging.info(f"Synced {src} to {dest}")
+        logging.info(f"Synced {src} to {backup_dest}")
+        
+        # Retain only the most recent backups if pruning is enabled
+        if prune_old_backups:
+            manage_backup_retention(dest, keep_backups)
+            logging.info(f"Backup retention policy: keeping {keep_backups} most recent backups")
+        else:
+            logging.info("Backup retention policy: keeping all backups")
     except subprocess.CalledProcessError as e:
         logging.error(f"rsync failed: {e}")
+    except Exception as e:
+        logging.error(f"Backup failed: {e}")
+
+def manage_backup_retention(backup_dir, keep_count=2):
+    """Keep only the specified number of most recent backups."""
+    try:
+        # List all backup directories
+        backup_folders = []
+        for item in os.listdir(backup_dir):
+            item_path = os.path.join(backup_dir, item)
+            if os.path.isdir(item_path) and item.replace("_", "").isdigit():
+                # Only consider timestamp-named folders (YYYYmmdd_HHMMSS format)
+                backup_folders.append(item_path)
+        
+        # Sort backups by creation time (newest first)
+        backup_folders.sort(reverse=True)
+        
+        # Remove older backups beyond the keep count
+        if len(backup_folders) > keep_count:
+            for old_backup in backup_folders[keep_count:]:
+                logging.info(f"Removing old backup: {old_backup}")
+                subprocess.run(["rm", "-rf", old_backup], check=True)
+    except Exception as e:
+        logging.error(f"Error managing backup retention: {e}")
 
 def get_task_hash(config):
     """Generate a hash of the task configuration to detect changes"""
@@ -56,12 +95,18 @@ def get_task_hash(config):
         tasks_hash = len(config["tasks"])
         for task in config["tasks"]:
             tasks_hash = hash((tasks_hash, task["source"], task["destination"], 
-                              task.get("interval_minutes", 30)))
+                              task.get("interval_minutes", 30),
+                              task.get("keep_backups", 2),
+                              task.get("prune_old_backups", True),
+                              task.get("enabled", True)))
         return tasks_hash
     else:
         # For single task config
         return hash((config["source"], config["destination"], 
-                   config.get("interval_minutes", 30)))
+                   config.get("interval_minutes", 30),
+                   config.get("keep_backups", 2),
+                   config.get("prune_old_backups", True),
+                   True))  # Legacy tasks are always enabled
 
 def main():
     # Priority queue of (next_run_time, task_id, task_config)
@@ -83,17 +128,27 @@ def main():
             # Handle both single task and multiple tasks configurations
             if "tasks" in config:
                 tasks = config["tasks"]
+                enabled_tasks = 0
                 for i, task in enumerate(tasks):
+                    # Skip disabled tasks
+                    if not task.get("enabled", True):
+                        logging.info(f"Task {i} is disabled, skipping")
+                        continue
+                    
                     next_run = current_time
                     heapq.heappush(task_queue, (next_run, i, task))
-                logging.info(f"Loaded {len(tasks)} tasks from config")
+                    enabled_tasks += 1
+                
+                logging.info(f"Loaded {enabled_tasks} enabled tasks from config (total: {len(tasks)})")
             else:
                 # Legacy single task configuration
+                # For backward compatibility, legacy tasks are always enabled
                 task = {
                     "source": config["source"],
                     "destination": config["destination"],
                     "interval_minutes": config.get("interval_minutes", 30),
-                    "excludes": config.get("excludes", [])
+                    "excludes": config.get("excludes", []),
+                    "enabled": True
                 }
                 heapq.heappush(task_queue, (current_time, 0, task))
                 logging.info("Loaded single task from legacy config")
@@ -115,8 +170,10 @@ def main():
         dest = os.path.expanduser(task["destination"])
         interval = task.get("interval_minutes", 30)
         excludes = task.get("excludes", [])
+        keep_backups = task.get("keep_backups", 2)
+        prune_old_backups = task.get("prune_old_backups", True)
         
-        sync(src, dest, excludes)
+        sync(src, dest, excludes, keep_backups, prune_old_backups)
         
         # Schedule the next run
         next_run = datetime.now() + timedelta(minutes=interval)
