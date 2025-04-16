@@ -10,13 +10,13 @@ echo "Installing sync daemon..."
 sudo mkdir -p $SCRIPT_PATH
 sudo cp sync_daemon.py $SCRIPT_PATH/
 sudo mkdir -p $CONFIG_DIR
-sudo cp config.example.json $CONFIG_DIR/config.json
+sudo cp config.json $CONFIG_DIR/config.json
 
 # Set permissions
 sudo chmod +x $SCRIPT_PATH/sync_daemon.py
 
 # Set up systemd
-sudo cp systemd/sync_daemon.service /etc/systemd/system/
+sudo cp sync_daemon.service /etc/systemd/system/
 sudo systemctl daemon-reexec
 sudo systemctl enable $SERVICE_NAME
 sudo systemctl start $SERVICE_NAME
