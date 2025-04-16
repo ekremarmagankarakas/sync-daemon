@@ -1,14 +1,40 @@
 {
-  "source": "/home/username/",
-  "destination": "/mnt/backup_drive/",
-  "interval_minutes": 30,
-  "excludes": [
-    "node_modules/",
-    ".git/",
-    "*.tmp",
-    ".cache/",
-    ".vscode/",
-    "venv/",
-    "__pycache__/"
+  "tasks": [
+    {
+      "source": "/home/username/documents/",
+      "destination": "/mnt/backup_drive/documents/",
+      "interval_minutes": 15,
+      "excludes": [
+        "node_modules/",
+        ".git/",
+        "*.tmp",
+        ".cache/",
+        ".vscode/",
+        "venv/",
+        "__pycache__/"
+      ]
+    },
+    {
+      "source": "/home/username/pictures/",
+      "destination": "/mnt/backup_drive/pictures/",
+      "interval_minutes": 60,
+      "excludes": [
+        "*.tmp"
+      ]
+    },
+    {
+      "source": "/home/username/projects/",
+      "destination": "/mnt/backup_drive/projects/",
+      "interval_minutes": 30,
+      "excludes": [
+        "node_modules/",
+        ".git/",
+        "*.tmp",
+        ".cache/",
+        ".vscode/",
+        "venv/",
+        "__pycache__/"
+      ]
+    }
   ]
 }
