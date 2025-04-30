@@ -13,7 +13,7 @@ A lightweight Linux background service to periodically sync files from multiple 
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/sync-daemon.git
+git clone https://github.com/ekremarmagankarakas/sync-daemon.git
 cd sync-daemon
 sudo ./install.sh
 ```
